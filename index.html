@@ -1,1141 +1,287 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>NihonChess V1 - Professional Engine</title>
+    
+    <link rel="stylesheet" href="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+    
     <style>
         :root {
-            --primary-color: #2c3e50;
-            --secondary-color: #3498db;
-            --accent-color: #e74c3c;
-            --light-color: #ecf0f1;
-            --dark-color: #2c3e50;
-            --board-light: #f0d9b5;
-            --board-dark: #b58863;
-            --highlight: #ffeb3b;
-            --move-indicator: #4caf50;
-            --transition: all 0.3s ease;
+            --bg-main: #f8fafc; --bg-card: #ffffff;
+            --accent: #6366f1; --text-primary: #0f172a;
+            --text-secondary: #64748b; --board-border: #e2e8f0;
+            --white-sq: #f0d9b5; --black-sq: #b58863;
         }
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+        body.dark {
+            --bg-main: #020617; --bg-card: #0f172a;
+            --accent: #818cf8; --text-primary: #f8fafc;
+            --text-secondary: #94a3b8; --board-border: #1e293b;
+            --white-sq: #475569; --black-sq: #1e293b;
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-            color: var(--light-color);
-            min-height: 100vh;
-            padding: 20px;
+            background-color: var(--bg-main);
+            color: var(--text-primary);
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            transition: all 0.3s ease;
+            overscroll-behavior-y: contain;
         }
 
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            background: rgba(44, 62, 80, 0.95);
-            border-radius: 15px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-            padding: 20px;
-            backdrop-filter: blur(10px);
+        .board-container {
+            position: relative; width: 100%; max-width: 480px; aspect-ratio: 1/1;
+            border: 10px solid var(--board-border); border-radius: 20px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.2); touch-action: none;
         }
 
-        header {
-            text-align: center;
-            padding: 20px 0;
-            border-bottom: 3px solid var(--secondary-color);
-            margin-bottom: 20px;
-            position: relative;
-        }
-
-        header h1 {
-            font-size: 2.5rem;
-            font-weight: 700;
-            letter-spacing: 3px;
-            text-transform: uppercase;
-            background: linear-gradient(45deg, #3498db, #9b59b6);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
-        }
-
-        .logo {
-            font-size: 4rem;
-            font-weight: 900;
-            letter-spacing: 5px;
-            color: var(--light-color);
-            margin: 10px 0;
-            text-shadow: 0 0 20px rgba(52, 152, 219, 0.8);
-            animation: pulse 2s infinite;
-        }
-
-        @keyframes pulse {
-            0%, 100% { text-shadow: 0 0 20px rgba(52, 152, 219, 0.8); }
-            50% { text-shadow: 0 0 40px rgba(147, 89, 182, 1); }
-        }
-
-        .engine-tag {
-            background: linear-gradient(45deg, var(--primary-color), var(--dark-color));
-            padding: 5px 15px;
-            border-radius: 20px;
-            font-size: 0.9rem;
-            font-weight: 600;
-            letter-spacing: 1px;
-            display: inline-block;
-            margin-top: 10px;
-            border: 2px solid var(--secondary-color);
-        }
-
-        .control-panel {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-            gap: 15px;
-            margin-bottom: 25px;
-            background: rgba(30, 41, 59, 0.8);
-            padding: 20px;
-            border-radius: 10px;
-            border: 2px solid rgba(52, 152, 219, 0.5);
-        }
-
-        .btn {
-            background: linear-gradient(45deg, var(--primary-color), var(--dark-color));
-            color: white;
-            border: none;
-            padding: 12px 20px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 0.95rem;
-            font-weight: 600;
-            transition: var(--transition);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
-        }
-
-        .btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
-        }
-
-        .btn:active {
-            transform: translateY(1px);
-        }
-
-        .btn-primary {
-            background: linear-gradient(45deg, var(--secondary-color), #2980b9);
-        }
-
-        .btn-primary:hover {
-            background: linear-gradient(45deg, #2980b9, var(--secondary-color));
-        }
-
-        .btn-accent {
-            background: linear-gradient(45deg, var(--accent-color), #c0392b);
-        }
-
-        .btn-accent:hover {
-            background: linear-gradient(45deg, #c0392b, var(--accent-color));
-        }
-
-        .btn-success {
-            background: linear-gradient(45deg, #27ae60, #2ecc71);
-        }
-
-        .btn-success:hover {
-            background: linear-gradient(45deg, #2ecc71, #27ae60);
-        }
-
-        .btn-warning {
-            background: linear-gradient(45deg, #f39c12, #f1c40f);
-        }
-
-        .btn-warning:hover {
-            background: linear-gradient(45deg, #f1c40f, #f39c12);
-        }
-
-        .btn-info {
-            background: linear-gradient(45deg, #1abc9c, #16a085);
-        }
-
-        .btn-info:hover {
-            background: linear-gradient(45deg, #16a085, #1abc9c);
-        }
-
-        .btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-            transform: none;
-        }
-
-        .main-content {
-            display: grid;
-            grid-template-columns: 1fr 350px;
-            gap: 25px;
-            margin-bottom: 20px;
-        }
-
-        @media (max-width: 900px) {
-            .main-content {
-                grid-template-columns: 1fr;
-            }
-        }
-
-        .chess-board-container {
-            background: rgba(30, 41, 59, 0.9);
-            padding: 25px;
-            border-radius: 10px;
-            border: 2px solid rgba(231, 76, 60, 0.5);
-            box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.5);
-        }
-
-        .board-wrapper {
-            position: relative;
-            display: inline-block;
-            background: rgba(0, 0, 0, 0.2);
-            border-radius: 5px;
-            padding: 15px;
-            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.4);
-        }
-
-        #chessboard {
-            display: grid;
-            grid-template-columns: repeat(8, 60px);
-            grid-template-rows: repeat(8, 60px);
-            gap: 0;
-            background: rgba(0, 0, 0, 0.1);
-            border-radius: 5px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-        }
-
-        @media (max-width: 600px) {
-            #chessboard {
-                grid-template-columns: repeat(8, 40px);
-                grid-template-rows: repeat(8, 40px);
-            }
-        }
-
-        .square {
-            width: 60px;
-            height: 60px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 2.5rem;
-            cursor: pointer;
-            user-select: none;
-            position: relative;
-            transition: var(--transition);
-            border: 2px solid transparent;
-        }
-
-        @media (max-width: 600px) {
-            .square {
-                width: 40px;
-                height: 40px;
-                font-size: 1.8rem;
-            }
-        }
-
-        .square.light {
-            background-color: var(--board-light);
-        }
-
-        .square.dark {
-            background-color: var(--board-dark);
-        }
-
-        .square.highlight {
-            background-color: var(--highlight);
-            transform: scale(0.98);
-            box-shadow: 0 0 15px rgba(255, 235, 59, 0.7);
-        }
-
-        .square.move-indicator {
-            background-color: var(--move-indicator);
-            transform: scale(0.98);
-            box-shadow: 0 0 15px rgba(76, 175, 80, 0.7);
-        }
-
-        .square.check {
-            box-shadow: 0 0 20px rgba(231, 76, 60, 0.9);
-            animation: pulse-check 1s infinite;
-        }
-
-        @keyframes pulse-check {
-            0%, 100% { box-shadow: 0 0 20px rgba(231, 76, 60, 0.9); }
-            50% { box-shadow: 0 0 30px rgba(231, 76, 60, 1); }
-        }
-
-        .square.selected {
-            transform: scale(0.95);
-            box-shadow: 0 0 20px rgba(52, 152, 219, 0.8);
-            z-index: 10;
-        }
-
-        .square.last-move {
-            position: relative;
-        }
-
-        .square.last-move::after {
-            content: '';
-            position: absolute;
-            top: 5px;
-            left: 5px;
-            right: 5px;
-            bottom: 5px;
-            background: rgba(52, 152, 219, 0.3);
-            border-radius: 50%;
-            animation: pulse-last-move 1.5s ease-in-out;
-        }
-
-        @keyframes pulse-last-move {
-            0% { transform: scale(0.8); opacity: 0.3; }
-            50% { transform: scale(1); opacity: 0.6; }
-            100% { transform: scale(0.8); opacity: 0.3; }
-        }
-
-        .coordinates {
-            position: absolute;
-            font-size: 0.7rem;
-            color: rgba(255, 255, 255, 0.7);
-            pointer-events: none;
-        }
+        .white-1e1d7 { background-color: var(--white-sq) !important; }
+        .black-3c85d { background-color: var(--black-sq) !important; }
+        #drawingCanvas { position: absolute; top: 0; left: 0; pointer-events: none; z-index: 40; }
 
-        .coord-file {
-            bottom: -20px;
-            left: 50%;
-            transform: translateX(-50%);
-        }
-
-        .coord-rank {
-            left: -20px;
-            top: 50%;
-            transform: translateY(-50%);
-        }
-
-        .analysis-panel {
-            background: rgba(30, 41, 59, 0.9);
-            padding: 25px;
-            border-radius: 10px;
-            border: 2px solid rgba(46, 204, 113, 0.5);
-            box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.5);
-        }
-
-        .panel-header {
-            font-size: 1.3rem;
-            font-weight: 700;
-            margin-bottom: 15px;
-            padding-bottom: 10px;
-            border-bottom: 2px solid var(--secondary-color);
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .status-display {
-            background: rgba(0, 0, 0, 0.3);
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 15px;
-            text-align: center;
-            font-size: 1.1rem;
-            font-weight: 600;
-            min-height: 60px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border: 2px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .status-ready {
-            color: #27ae60;
-            animation: status-pulse 2s infinite;
-        }
-
-        @keyframes status-pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.7; }
-        }
-
-        .status-thinking {
-            color: #f39c12;
-        }
-
-        .status-checkmate {
-            color: var(--accent-color);
-        }
-
-        .status-stalemate {
-            color: #f1c40f;
-        }
-
-        .pgn-history {
-            background: rgba(0, 0, 0, 0.2);
-            padding: 15px;
-            border-radius: 8px;
-            max-height: 300px;
-            overflow-y: auto;
-            font-family: 'Courier New', monospace;
-            font-size: 0.95rem;
-            line-height: 1.6;
-            white-space: pre-wrap;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .pgn-history::-webkit-scrollbar {
-            width: 8px;
-        }
-
-        .pgn-history::-webkit-scrollbar-track {
-            background: rgba(0, 0, 0, 0.2);
-            border-radius: 4px;
-        }
-
-        .pgn-history::-webkit-scrollbar-thumb {
-            background: var(--secondary-color);
-            border-radius: 4px;
-        }
-
-        .pgn-history::-webkit-scrollbar-thumb:hover {
-            background: #2980b9;
-        }
-
-        .engine-stats {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 15px;
-            margin-top: 15px;
-        }
-
-        .stat-item {
-            background: rgba(0, 0, 0, 0.2);
-            padding: 12px;
-            border-radius: 8px;
-            text-align: center;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .stat-label {
-            font-size: 0.85rem;
-            color: rgba(255, 255, 255, 0.6);
-            margin-bottom: 5px;
-        }
-
-        .stat-value {
-            font-size: 1.2rem;
-            font-weight: 700;
-            color: var(--secondary-color);
-        }
-
-        .reset-section {
-            text-align: center;
-            margin-top: 20px;
-            padding-top: 20px;
-            border-top: 2px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .notification {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            padding: 15px 25px;
-            background: rgba(46, 204, 113, 0.95);
-            color: white;
-            border-radius: 8px;
-            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.4);
-            transform: translateX(400px);
-            transition: transform 0.3s ease;
-            z-index: 1000;
-            font-weight: 600;
-        }
-
-        .notification.show {
-            transform: translateX(0);
-        }
-
-        .notification.error {
-            background: rgba(231, 76, 60, 0.95);
-        }
-
-        .notification.warning {
-            background: rgba(243, 156, 18, 0.95);
-        }
-
-        .notification.info {
-            background: rgba(52, 152, 219, 0.95);
-        }
-
-        .thinking-indicator {
-            display: inline-block;
-            margin-left: 10px;
-        }
-
-        .thinking-indicator span {
-            display: inline-block;
-            width: 8px;
-            height: 8px;
-            background: #f39c12;
-            border-radius: 50%;
-            margin: 0 2px;
-            animation: bounce 1.4s infinite ease-in-out both;
-        }
-
-        .thinking-indicator span:nth-child(1) { animation-delay: -0.32s; }
-        .thinking-indicator span:nth-child(2) { animation-delay: -0.16s; }
-
-        @keyframes bounce {
-            0%, 80%, 100% { transform: scale(0); }
-            40% { transform: scale(1); }
-        }
-
-        .move-suggestion {
-            background: rgba(52, 152, 219, 0.2);
-            padding: 10px;
-            border-radius: 8px;
-            margin-top: 15px;
-            font-size: 0.95rem;
-            border-left: 4px solid var(--secondary-color);
-        }
-
-        .move-suggestion strong {
-            color: var(--secondary-color);
-        }
-
-        footer {
-            text-align: center;
-            margin-top: 20px;
-            padding-top: 20px;
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
-            font-size: 0.85rem;
-            color: rgba(255, 255, 255, 0.5);
-        }
-
-        .promotion-modal {
-            display: none;
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: rgba(44, 62, 80, 0.98);
-            padding: 30px;
-            border-radius: 10px;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
-            z-index: 1000;
-            border: 3px solid var(--secondary-color);
-        }
-
-        .promotion-modal.show {
-            display: block;
-            animation: modal-fade 0.3s ease;
-        }
-
-        @keyframes modal-fade {
-            from { opacity: 0; transform: translate(-50%, -60%); }
-            to { opacity: 1; transform: translate(-50%, -50%); }
-        }
-
-        .promotion-options {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 15px;
-            margin-top: 20px;
-        }
-
-        .promotion-piece {
-            font-size: 3rem;
-            cursor: pointer;
-            padding: 15px;
-            background: rgba(0, 0, 0, 0.2);
-            border-radius: 8px;
-            text-align: center;
-            transition: var(--transition);
-        }
-
-        .promotion-piece:hover {
-            background: rgba(52, 152, 219, 0.3);
-            transform: scale(1.1);
-        }
-
-        .overlay {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.8);
-            z-index: 999;
-        }
-
-        .overlay.show {
-            display: block;
-        }
+        .tag-mate { background: #f43f5e; color: white; padding: 2px 8px; border-radius: 4px; font-weight: 800; animation: pulse 1s infinite; }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.7; } 100% { opacity: 1; } }
 
-        @media (max-width: 768px) {
-            .control-panel {
-                grid-template-columns: repeat(2, 1fr);
-            }
-            
-            .engine-stats {
-                grid-template-columns: 1fr;
-            }
+        @media (min-width: 1024px) {
+            .main-content { display: grid; grid-template-columns: 1fr 420px; gap: 3rem; align-items: start; }
         }
     </style>
 </head>
-<body>
-    <div class="container">
-        <header>
-            <h1>NihonChess V1 - Professional Engine</h1>
-            <div class="logo">NIHONCHESSV1</div>
-            <div class="engine-tag">Full Integrity Engine</div>
+<body class="dark p-4 md:p-10">
+
+    <div class="max-w-7xl mx-auto">
+        <header class="flex justify-between items-center mb-8">
+            <div>
+                <h1 class="text-3xl font-black italic tracking-tighter text-indigo-500">NIHON<span class="text-[var(--text-primary)]">CHESS</span> <span class="text-xs bg-indigo-500 text-white px-2 py-1 rounded ml-2 not-italic">V1</span></h1>
+                <p class="text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-widest mt-1">Full Integrity Engine</p>
+            </div>
+            <button onclick="toggleTheme()" class="w-12 h-12 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-xl">🌓</button>
         </header>
 
-        <div class="control-panel">
-            <button class="btn btn-primary" id="liveAnalysis">
-                <span>🌓</span> Live Analysis <span class="eval">0.00</span>
-            </button>
-            <button class="btn btn-info" id="flipBoard">🔄 Flip</button>
-            <button class="btn btn-warning" id="undoMove">⬅️ Undo</button>
-            <button class="btn btn-success" id="eloStrength">ELO Strength</button>
-            <button class="btn btn-info" id="multiPV">Multi-PV (1)</button>
-            <button class="btn btn-primary" id="pgnHistoryBtn">PGN History</button>
-            <button class="btn btn-success" id="copyPGN">Copy PGN</button>
-        </div>
-
-        <div class="main-content">
-            <div class="chess-board-container">
-                <div class="board-wrapper">
-                    <div id="chessboard"></div>
+        <main class="main-content">
+            <div class="flex flex-col items-center">
+                <div class="board-container" id="boardParent">
+                    <div id="myBoard" style="width: 100%"></div>
+                    <canvas id="drawingCanvas"></canvas>
                 </div>
-            </div>
-
-            <div class="analysis-panel">
-                <div class="panel-header">📊 Engine Analysis</div>
-                <div class="status-display status-ready" id="statusDisplay">
-                    Ready...
-                </div>
-
-                <div class="pgn-history" id="pgnHistory"></div>
-
-                <div class="move-suggestion" id="moveSuggestion">
-                    <strong>Engine Suggestion:</strong> e4
-                </div>
-
-                <div class="engine-stats">
-                    <div class="stat-item">
-                        <div class="stat-label">Depth</div>
-                        <div class="stat-value" id="depthStat">12</div>
+                
+                <div class="w-full max-w-[480px] mt-8">
+                    <div class="flex justify-between text-[11px] font-black uppercase mb-2">
+                        <span class="text-[var(--text-secondary)]">Live Analysis</span>
+                        <span id="scoreVal" class="text-indigo-400 font-mono text-sm">0.00</span>
                     </div>
-                    <div class="stat-item">
-                        <div class="stat-label">Nodes</div>
-                        <div class="stat-value" id="nodesStat">1.2M</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-label">Speed</div>
-                        <div class="stat-value" id="speedStat">850kN/s</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-label">Time</div>
-                        <div class="stat-value" id="timeStat">0.0s</div>
+                    <div class="h-3 w-full bg-slate-800/30 rounded-full overflow-hidden border border-slate-700/20">
+                        <div id="evalProgress" class="h-full bg-indigo-500 transition-all duration-500" style="width: 50%"></div>
                     </div>
                 </div>
             </div>
-        </div>
 
-        <div class="reset-section">
-            <button class="btn btn-accent btn-lg" id="resetGame">Reset Full Game</button>
-        </div>
+            <div class="space-y-6 mt-8 lg:mt-0">
+                <div class="grid grid-cols-2 gap-3">
+                    <button onclick="flipBoard()" class="bg-indigo-600 hover:bg-indigo-500 text-white py-4 rounded-xl text-[10px] font-bold uppercase transition-all">🔄 Flip</button>
+                    <button onclick="undoMove()" class="bg-slate-700 hover:bg-slate-600 text-white py-4 rounded-xl text-[10px] font-bold uppercase transition-all">⬅️ Undo</button>
+                </div>
 
-        <footer>
-            <p>NihonChess V1 Engine • Professional Chess Analysis • © 2026</p>
-        </footer>
+                <div class="bg-[var(--bg-card)] p-6 rounded-[2rem] border border-black/5 shadow-xl space-y-5">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="text-[9px] font-black text-slate-500 uppercase block mb-1">ELO Strength</label>
+                            <input type="number" id="eloInput" value="3000" class="w-full p-2 rounded-lg bg-slate-800/5 border border-slate-700/10 text-center text-xs font-bold outline-none">
+                        </div>
+                        <div>
+                            <label class="text-[9px] font-black text-slate-500 uppercase block mb-1">Multi-PV (<span id="pvDisplay">1</span>)</label>
+                            <input type="range" id="pvInput" min="1" max="4" value="1" class="w-full accent-indigo-500">
+                        </div>
+                    </div>
+
+                    <div>
+                        <div class="flex justify-between items-center mb-2">
+                            <label class="text-[9px] font-black text-slate-500 uppercase">PGN History</label>
+                            <button onclick="copyPGN()" class="text-[9px] font-bold text-indigo-500 uppercase">Copy</button>
+                        </div>
+                        <div id="pgnLog" class="h-40 bg-slate-800/5 rounded-xl p-3 overflow-y-auto text-[11px] font-mono leading-relaxed text-[var(--text-secondary)]">
+                            Ready...
+                        </div>
+                    </div>
+                </div>
+
+                <button onclick="resetGame()" class="w-full py-3 rounded-xl text-[10px] font-black text-red-500 border border-red-500/20 hover:bg-red-500/5 uppercase">Reset Full Game</button>
+            </div>
+        </main>
     </div>
 
-    <div class="notification" id="notification"></div>
-    <div class="overlay" id="overlay"></div>
-    <div class="promotion-modal" id="promotionModal">
-        <h3 style="text-align: center; margin-bottom: 20px;">Choose Promotion Piece</h3>
-        <div class="promotion-options">
-            <div class="promotion-piece" data-piece="q">♕</div>
-            <div class="promotion-piece" data-piece="r">♖</div>
-            <div class="promotion-piece" data-piece="b">♗</div>
-            <div class="promotion-piece" data-piece="n">♘</div>
-        </div>
-    </div>
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <script src="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
 
     <script>
-        // ========== CHESS ENGINE CORE ==========
-        class NihonChessEngine {
-            constructor() {
-                this.board = this.createInitialBoard();
-                this.currentPlayer = 'w';
-                this.selectedSquare = null;
-                this.moveHistory = [];
-                this.gameOver = false;
-                this.flipBoardState = false;
-                this.analysisMode = false;
-                this.engineStrength = 1500;
-                this.multiPV = 1;
-                this.lastMove = null;
-                this.inCheck = { w: false, b: false };
-                this.initializeBoard();
-                this.bindEvents();
+        const CHESS_CONFIG = {
+            engine: { depth: 13, defaultPv: 1, maxPv: 4, defaultElo: 3000 },
+            visuals: {
+                bestMoveColor: "rgba(99, 102, 241, 0.85)",
+                altMoveColor: "rgba(148, 163, 184, 0.4)",
+                pieceTheme: 'https://chessboardjs.com/img/chesspieces/wikipedia/{piece}.png'
             }
+        };
 
-            createInitialBoard() {
-                return [
-                    ['r', 'n', 'b', 'q', 'k', 'b', 'n', 'r'],
-                    ['p', 'p', 'p', 'p', 'p', 'p', 'p', 'p'],
-                    [null, null, null, null, null, null, null, null],
-                    [null, null, null, null, null, null, null, null],
-                    [null, null, null, null, null, null, null, null],
-                    [null, null, null, null, null, null, null, null],
-                    ['P', 'P', 'P', 'P', 'P', 'P', 'P', 'P'],
-                    ['R', 'N', 'B', 'Q', 'K', 'B', 'N', 'R']
-                ];
-            }
+        let board = null, game = new Chess(), stockfish = null, currentMoves = [], lastEval = 0;
 
-            initializeBoard() {
-                const chessboard = document.getElementById('chessboard');
-                chessboard.innerHTML = '';
+        function initEngine() {
+            const engineUrl = "https://cdnjs.cloudflare.com/ajax/libs/stockfish.js/10.0.2/stockfish.js";
+            const blobUrl = URL.createObjectURL(new Blob([`importScripts("${engineUrl}");`], {type: 'application/javascript'}));
+            stockfish = new Worker(blobUrl);
+            stockfish.onmessage = (e) => handleEngineMessage(e.data);
+            stockfish.postMessage("uci");
+            updateEngineOptions();
+            analyze();
+        }
 
-                for (let row = 0; row < 8; row++) {
-                    for (let col = 0; col < 8; col++) {
-                        const square = document.createElement('div');
-                        const actualRow = this.flipBoardState ? 7 - row : row;
-                        const actualCol = this.flipBoardState ? 7 - col : col;
-                        
-                        square.className = `square ${(actualRow + actualCol) % 2 === 0 ? 'light' : 'dark'}`;
-                        square.dataset.row = row;
-                        square.dataset.col = col;
-                        
-                        const piece = this.board[actualRow][actualCol];
-                        if (piece) {
-                            square.textContent = this.getPieceSymbol(piece);
-                        }
-
-                        if (row === 7) {
-                            const coord = document.createElement('div');
-                            coord.className = 'coordinates coord-file';
-                            coord.textContent = String.fromCharCode(97 + actualCol);
-                            square.appendChild(coord);
-                        }
-
-                        if (col === 0) {
-                            const coord = document.createElement('div');
-                            coord.className = 'coordinates coord-rank';
-                            coord.textContent = (8 - actualRow).toString();
-                            square.appendChild(coord);
-                        }
-
-                        chessboard.appendChild(square);
-                    }
-                }
-
-                this.updateLastMoveHighlight();
-                this.updateCheckHighlight();
-            }
-
-            getPieceSymbol(piece) {
-                const symbols = {
-                    'P': '♙', 'R': '♖', 'N': '♘', 'B': '♗', 'Q': '♕', 'K': '♔',
-                    'p': '♟', 'r': '♜', 'n': '♞', 'b': '♝', 'q': '♛', 'k': '♚'
-                };
-                return symbols[piece] || '';
-            }
-
-            bindEvents() {
-                document.querySelectorAll('.square').forEach(square => {
-                    square.addEventListener('click', (e) => this.handleSquareClick(e));
-                });
-
-                document.getElementById('flipBoard').addEventListener('click', () => this.flipBoard());
-                document.getElementById('undoMove').addEventListener('click', () => this.undoMove());
-                document.getElementById('resetGame').addEventListener('click', () => this.resetGame());
-                document.getElementById('liveAnalysis').addEventListener('click', () => this.toggleAnalysis());
-                document.getElementById('eloStrength').addEventListener('click', () => this.changeELO());
-                document.getElementById('multiPV').addEventListener('click', () => this.changeMultiPV());
-                document.getElementById('copyPGN').addEventListener('click', () => this.copyPGN());
-                document.getElementById('pgnHistoryBtn').addEventListener('click', () => this.togglePGNHistory());
-
-                document.querySelectorAll('.promotion-piece').forEach(piece => {
-                    piece.addEventListener('click', (e) => this.handlePromotion(e));
-                });
-            }
-
-            handleSquareClick(e) {
-                if (this.gameOver) return;
-
-                const square = e.target.closest('.square');
-                if (!square) return;
-
-                const row = parseInt(square.dataset.row);
-                const col = parseInt(square.dataset.col);
-
-                if (this.selectedSquare) {
-                    const fromRow = this.selectedSquare.row;
-                    const fromCol = this.selectedSquare.col;
-
-                    if (this.isValidMove(fromRow, fromCol, row, col)) {
-                        this.makeMove(fromRow, fromCol, row, col);
-                        this.selectedSquare = null;
-                        this.initializeBoard();
-                        
-                        if (!this.gameOver && this.currentPlayer === 'b') {
-                            setTimeout(() => this.computerMove(), 500);
-                        }
-                    } else {
-                        this.selectedSquare = { row, col };
-                        this.initializeBoard();
-                        this.highlightValidMoves(row, col);
-                    }
-                } else {
-                    const piece = this.getPieceAt(row, col);
-                    if (piece && piece.isUpper() === (this.currentPlayer === 'w')) {
-                        this.selectedSquare = { row, col };
-                        this.initializeBoard();
-                        this.highlightValidMoves(row, col);
-                    }
+        function handleEngineMessage(line) {
+            // PV Parsing
+            if (line.includes('depth') && line.includes('multipv')) {
+                const pvMatch = line.match(/multipv (\d+)/);
+                const moveMatch = line.match(/pv ([a-h][1-8][a-h][1-8])/);
+                if (pvMatch && moveMatch) {
+                    const idx = parseInt(pvMatch[1]) - 1;
+                    currentMoves[idx] = { move: moveMatch[1] };
+                    drawArrows();
                 }
             }
-
-            getPieceAt(row, col) {
-                const actualRow = this.flipBoardState ? 7 - row : row;
-                const actualCol = this.flipBoardState ? 7 - col : col;
-                return this.board[actualRow][actualCol];
-            }
-
-            isValidMove(fromRow, fromCol, toRow, toCol) {
-                const piece = this.getPieceAt(fromRow, fromCol);
-                if (!piece) return false;
-                if (piece.isUpper() !== (this.currentPlayer === 'w')) return false;
-
-                const targetPiece = this.getPieceAt(toRow, toCol);
-                if (targetPiece && targetPiece.isUpper() === (this.currentPlayer === 'w')) return false;
-
-                return true;
-            }
-
-            makeMove(fromRow, fromCol, toRow, toCol) {
-                const actualFromRow = this.flipBoardState ? 7 - fromRow : fromRow;
-                const actualFromCol = this.flipBoardState ? 7 - fromCol : fromCol;
-                const actualToRow = this.flipBoardState ? 7 - toRow : toRow;
-                const actualToCol = this.flipBoardState ? 7 - toCol : toCol;
-
-                const piece = this.board[actualFromRow][actualFromCol];
-                const captured = this.board[actualToRow][actualToCol];
-
-                this.moveHistory.push({
-                    from: { row: actualFromRow, col: actualFromCol },
-                    to: { row: actualToRow, col: actualToCol },
-                    piece,
-                    captured,
-                    player: this.currentPlayer
-                });
-
-                this.board[actualToRow][actualToCol] = piece;
-                this.board[actualFromRow][actualFromCol] = null;
-
-                this.lastMove = { from: { row: fromRow, col: fromCol }, to: { row: toRow, col: toCol } };
-
-                this.checkPromotion(actualToRow, actualToCol, piece);
-
-                this.currentPlayer = this.currentPlayer === 'w' ? 'b' : 'w';
-                this.updateStatus();
-                this.updatePGNHistory();
-            }
-
-            checkPromotion(row, col, piece) {
-                if (piece === 'P' && row === 0) {
-                    this.showPromotionModal(row, col, 'w');
-                } else if (piece === 'p' && row === 7) {
-                    this.showPromotionModal(row, col, 'b');
+            
+            // Mate Detection Logic
+            if (line.includes('score mate')) {
+                const mateMatch = line.match(/score mate (-?\d+)/);
+                if (mateMatch) {
+                    const steps = mateMatch[1];
+                    $('#scoreVal').html(`<span class="tag-mate">MATE IN ${Math.abs(steps)}</span>`);
+                    updateEvalBar(steps > 0 ? 100 : -100);
                 }
-            }
-
-            showPromotionModal(row, col, color) {
-                window.promotionData = { row, col, color };
-                document.getElementById('overlay').classList.add('show');
-                document.getElementById('promotionModal').classList.add('show');
-            }
-
-            handlePromotion(e) {
-                const pieceType = e.target.dataset.piece;
-                const { row, col, color } = window.promotionData;
-
-                const promotedPiece = color === 'w' ? pieceType.toUpperCase() : pieceType.toLowerCase();
-                this.board[row][col] = promotedPiece;
-
-                document.getElementById('overlay').classList.remove('show');
-                document.getElementById('promotionModal').classList.remove('show');
-                delete window.promotionData;
-
-                this.initializeBoard();
-            }
-
-            computerMove() {
-                if (this.gameOver || this.currentPlayer !== 'b') return;
-
-                document.getElementById('statusDisplay').innerHTML = 'Engine Thinking... <span class="thinking-indicator"><span></span><span></span><span></span></span>';
-                document.getElementById('statusDisplay').className = 'status-display status-thinking';
-
-                setTimeout(() => {
-                    const validMoves = this.getValidMovesForPlayer('b');
-                    if (validMoves.length > 0) {
-                        const randomMove = validMoves[Math.floor(Math.random() * validMoves.length)];
-                        this.makeMove(randomMove.fromRow, randomMove.fromCol, randomMove.toRow, randomMove.toCol);
-                        this.initializeBoard();
-                    }
-                }, 800);
-            }
-
-            getValidMovesForPlayer(player) {
-                const moves = [];
-                for (let row = 0; row < 8; row++) {
-                    for (let col = 0; col < 8; col++) {
-                        const piece = this.board[row][col];
-                        if (piece && piece.isUpper() === (player === 'w')) {
-                            // Simplified - in real engine, check all valid moves for each piece
-                            for (let toRow = 0; toRow < 8; toRow++) {
-                                for (let toCol = 0; toCol < 8; toCol++) {
-                                    if (this.isValidMoveSimple(row, col, toRow, toCol)) {
-                                        moves.push({ fromRow: row, fromCol: col, toRow, toCol });
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-                return moves;
-            }
-
-            isValidMoveSimple(fromRow, fromCol, toRow, toCol) {
-                if (fromRow === toRow && fromCol === toCol) return false;
-                const piece = this.board[fromRow][fromCol];
-                if (!piece) return false;
-                const target = this.board[toRow][toCol];
-                if (target && target.isUpper() === piece.isUpper()) return false;
-                return true;
-            }
-
-            highlightValidMoves(row, col) {
-                const squares = document.querySelectorAll('.square');
-                squares.forEach(square => {
-                    const sRow = parseInt(square.dataset.row);
-                    const sCol = parseInt(square.dataset.col);
-                    if (this.isValidMove(row, col, sRow, sCol)) {
-                        square.classList.add('move-indicator');
-                    }
-                });
-            }
-
-            updateLastMoveHighlight() {
-                if (!this.lastMove) return;
-
-                document.querySelectorAll('.square').forEach(square => {
-                    square.classList.remove('last-move');
-                });
-
-                const fromSquare = document.querySelector(`.square[data-row="${this.lastMove.from.row}"][data-col="${this.lastMove.from.col}"]`);
-                const toSquare = document.querySelector(`.square[data-row="${this.lastMove.to.row}"][data-col="${this.lastMove.to.col}"]`);
-
-                if (fromSquare) fromSquare.classList.add('last-move');
-                if (toSquare) toSquare.classList.add('last-move');
-            }
-
-            updateCheckHighlight() {
-                const kingPos = this.findKingPosition(this.currentPlayer);
-                if (kingPos && this.isSquareAttacked(kingPos.row, kingPos.col, this.currentPlayer)) {
-                    this.inCheck[this.currentPlayer] = true;
-                    const square = document.querySelector(`.square[data-row="${kingPos.row}"][data-col="${kingPos.col}"]`);
-                    if (square) square.classList.add('check');
-                } else {
-                    this.inCheck[this.currentPlayer] = false;
-                    document.querySelectorAll('.square.check').forEach(s => s.classList.remove('check'));
-                }
-            }
-
-            findKingPosition(player) {
-                const king = player === 'w' ? 'K' : 'k';
-                for (let row = 0; row < 8; row++) {
-                    for (let col = 0; col < 8; col++) {
-                        if (this.board[row][col] === king) {
-                            return { row, col };
-                        }
-                    }
-                }
-                return null;
-            }
-
-            isSquareAttacked(row, col, player) {
-                return false;
-            }
-
-            undoMove() {
-                if (this.moveHistory.length === 0) return;
-
-                const lastMove = this.moveHistory.pop();
-                this.board[lastMove.from.row][lastMove.from.col] = lastMove.piece;
-                this.board[lastMove.to.row][lastMove.to.col] = lastMove.captured;
-
-                this.currentPlayer = lastMove.player;
-                this.lastMove = this.moveHistory.length > 0 ? 
-                    { from: this.moveHistory[this.moveHistory.length - 1].from, to: this.moveHistory[this.moveHistory.length - 1].to } : null;
-
-                this.gameOver = false;
-                this.initializeBoard();
-                this.updateStatus();
-                this.updatePGNHistory();
-                this.showNotification('Move undone', 'info');
-            }
-
-            flipBoard() {
-                this.flipBoardState = !this.flipBoardState;
-                this.initializeBoard();
-                this.showNotification('Board flipped', 'info');
-            }
-
-            toggleAnalysis() {
-                this.analysisMode = !this.analysisMode;
-                const btn = document.getElementById('liveAnalysis');
-                btn.innerHTML = this.analysisMode ? 
-                    '📊 Analysis ON <span class="eval">+0.35</span>' : 
-                    '🌓 Live Analysis <span class="eval">0.00</span>';
-                this.showNotification(this.analysisMode ? 'Analysis mode enabled' : 'Analysis mode disabled', 'info');
-            }
-
-            changeELO() {
-                const newELO = prompt('Set Engine ELO (800-3000):', this.engineStrength);
-                if (newELO && parseInt(newELO)) {
-                    this.engineStrength = Math.min(3000, Math.max(800, parseInt(newELO)));
-                    this.showNotification(`Engine strength set to ELO ${this.engineStrength}`, 'success');
-                }
-            }
-
-            changeMultiPV() {
-                this.multiPV = this.multiPV === 1 ? 3 : 5;
-                document.getElementById('multiPV').textContent = `Multi-PV (${this.multiPV})`;
-                this.showNotification(`Multi-PV lines: ${this.multiPV}`, 'info');
-            }
-
-            resetGame() {
-                if (confirm('Reset the game? All progress will be lost.')) {
-                    this.board = this.createInitialBoard();
-                    this.currentPlayer = 'w';
-                    this.selectedSquare = null;
-                    this.moveHistory = [];
-                    this.gameOver = false;
-                    this.lastMove = null;
-                    this.inCheck = { w: false, b: false };
-                    this.initializeBoard();
-                    this.updateStatus();
-                    this.updatePGNHistory();
-                    this.showNotification('Game reset successfully', 'success');
-                }
-            }
-
-            updateStatus() {
-                const statusDisplay = document.getElementById('statusDisplay');
-                if (this.gameOver) {
-                    statusDisplay.textContent = 'Checkmate!';
-                    statusDisplay.className = 'status-display status-checkmate';
-                } else if (this.inCheck[this.currentPlayer]) {
-                    statusDisplay.textContent = `${this.currentPlayer.toUpperCase()}'s turn - CHECK!`;
-                    statusDisplay.className = 'status-display status-thinking';
-                } else {
-                    statusDisplay.textContent = `${this.currentPlayer.toUpperCase()}'s turn`;
-                    statusDisplay.className = 'status-display status-ready';
-                }
-            }
-
-            updatePGNHistory() {
-                const pgnDiv = document.getElementById('pgnHistory');
-                if (this.moveHistory.length === 0) {
-                    pgnDiv.textContent = 'No moves yet...';
-                    return;
-                }
-
-                let pgn = '';
-                let moveNumber = 1;
-
-                for (let i = 0; i < this.moveHistory.length; i += 2) {
-                    pgn += `${Math.ceil((i + 1) / 2)}. `;
-                    
-                    if (i < this.moveHistory.length) {
-                        const move1 = this.moveHistory[i];
-                        pgn += `${this.getPieceSymbol(move1.piece)}${String.fromCharCode(97 + move1.to.col)}${8 - move1.to.row} `;
-                    }
-                    
-                    if (i + 1 < this.moveHistory.length) {
-                        const move2 = this.moveHistory[i + 1];
-                        pgn += `${this.getPieceSymbol(move2.piece)}${String.fromCharCode(97 + move2.to.col)}${8 - move2.to.row} `;
-                    }
-                    
-                    pgn += '\n';
-                }
-
-                pgnDiv.textContent = pgn;
-            }
-
-            togglePGNHistory() {
-                const pgnDiv = document.getElementById('pgnHistory');
-                if (pgnDiv.style.maxHeight === '500px') {
-                    pgnDiv.style.maxHeight = '300px';
-                } else {
-                    pgnDiv.style.maxHeight = '500px';
-                }
-            }
-
-            copyPGN() {
-                const pgnText = document.getElementById('pgnHistory').textContent;
-                if (pgnText && pgnText !== 'No moves yet...') {
-                    navigator.clipboard.writeText(pgnText).then(() => {
-                        this.showNotification('PGN copied to clipboard!', 'success');
-                    });
-                } else {
-                    this.showNotification('No moves to copy', 'warning');
-                }
-            }
-
-            showNotification(message, type = 'success') {
-                const notification = document.getElementById('notification');
-                notification.textContent = message;
-                notification.className = `notification ${type} show`;
+            } else if (line.includes('score cp')) {
+                let cp = parseInt(line.match(/score cp (-?\d+)/)[1]);
+                let score = (cp / 100).toFixed(2);
+                if (game.turn() === 'b') score = (-score).toFixed(2);
+                $('#scoreVal').text((score > 0 ? '+' : '') + score);
+                updateEvalBar(score);
                 
-                setTimeout(() => {
-                    notification.classList.remove('show');
-                }, 3000);
+                const history = game.history({verbose: true});
+                if (history.length > 0) {
+                    const lastMove = history[history.length - 1];
+                    if (!lastMove.comment) classifyMove(parseFloat(score), lastMove);
+                }
             }
         }
 
-        // ========== INITIALIZE ENGINE ==========
-        document.addEventListener('DOMContentLoaded', () => {
-            window.chessEngine = new NihonChessEngine();
-            
-            // Simulate engine stats update
-            setInterval(() => {
-                if (window.chessEngine.analysisMode && !window.chessEngine.gameOver) {
-                    const depth = Math.floor(Math.random() * 5) + 15;
-                    const nodes = (Math.random() * 2 + 1).toFixed(1) + 'M';
-                    const speed = Math.floor(Math.random() * 300 + 700) + 'kN/s';
-                    const time = (Math.random() * 2).toFixed(1) + 's';
-                    
-                    document.getElementById('depthStat').textContent = depth;
-                    document.getElementById('nodesStat').textContent = nodes;
-                    document.getElementById('speedStat').textContent = speed;
-                    document.getElementById('timeStat').textContent = time;
-                }
-            }, 1000);
-        });
+        function drawArrows() {
+            const canvas = document.getElementById('drawingCanvas');
+            const boardEl = $('#myBoard');
+            if (boardEl.width() === 0) return;
+            canvas.width = boardEl.width(); canvas.height = boardEl.height();
+            const ctx = canvas.getContext('2d'), sq = canvas.width / 8;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-        // Helper method for string prototype
-        String.prototype.isUpper = function() {
-            return this === this.toUpperCase() && this !== this.toLowerCase();
-        };
+            currentMoves.forEach((m, i) => {
+                if (!m) return;
+                const pos = (s) => {
+                    let c = s.charCodeAt(0)-97, r = 8-parseInt(s[1]);
+                    if (board.orientation()==='black') { c=7-c; r=7-r; }
+                    return { x: (c*sq)+sq/2, y: (r*sq)+sq/2 };
+                };
+                const s = pos(m.move.substring(0,2)), e = pos(m.move.substring(2,4));
+                const isBest = i === 0;
+                const alpha = isBest ? 0.85 : Math.max(0.1, 0.4 / (i + 1));
+                
+                ctx.save();
+                ctx.strokeStyle = isBest ? CHESS_CONFIG.visuals.bestMoveColor : `rgba(148, 163, 184, ${alpha})`;
+                ctx.fillStyle = ctx.strokeStyle;
+                ctx.lineWidth = isBest ? 8 : 4;
+                ctx.lineCap = 'round';
+                ctx.beginPath(); ctx.moveTo(s.x, s.y); ctx.lineTo(e.x, e.y); ctx.stroke();
+                const angle = Math.atan2(e.y - s.y, e.x - s.x);
+                ctx.translate(e.x, e.y); ctx.rotate(angle);
+                ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(-15, -8); ctx.lineTo(-15, 8); ctx.closePath();
+                ctx.fill(); ctx.restore();
+            });
+        }
+
+        function classifyMove(currentScore, lastMove) {
+            const diff = (currentScore - lastEval) * (game.turn() === 'w' ? -1 : 1);
+            if (diff > 1.2) lastMove.comment = `<span class="tag-mate" style="background:#eab308">!! BRILLIANT</span>`;
+            else if (diff < -1.5) lastMove.comment = `<span class="tag-mate" style="background:#ef4444">?? BLUNDER</span>`;
+            lastEval = currentScore;
+            updatePGN();
+        }
+
+        function updatePGN() {
+            let html = '';
+            game.history({verbose: true}).forEach((m, i) => {
+                if (i % 2 === 0) html += `<b>${(i/2)+1}.</b> `;
+                html += `<span>${m.san}</span>${m.comment || ''} `;
+            });
+            if (game.in_checkmate()) html += ` <span class="tag-mate"># CHECKMATE</span>`;
+            $('#pgnLog').html(html || "Ready...");
+            const log = document.getElementById('pgnLog');
+            log.scrollTop = log.scrollHeight;
+        }
+
+        function copyPGN() {
+            const pgn = game.pgn();
+            if (!pgn || pgn === "") {
+                alert("Belum ada langkah untuk disalin!");
+                return;
+            }
+            navigator.clipboard.writeText(pgn).then(() => {
+                alert("PGN berhasil disalin ke clipboard!");
+            }).catch(err => {
+                console.error('Gagal menyalin: ', err);
+            });
+        }
+
+        function updateEngineOptions() {
+            stockfish.postMessage(`setoption name Skill Level value ${Math.floor($('#eloInput').val() / 150)}`);
+            stockfish.postMessage(`setoption name MultiPV value ${$('#pvInput').val()}`);
+        }
+
+        function onDrop(source, target) {
+            const move = game.move({ from: source, to: target, promotion: 'q' });
+            if (move === null) return 'snapback';
+            
+            currentMoves = [];
+            updatePGN();
+            analyze();
+        }
+
+        function updateEvalBar(val) {
+            let p = Math.min(100, Math.max(0, (parseFloat(val) + 5) * 10));
+            $('#evalProgress').css('width', p + '%');
+        }
+
+        function analyze() {
+            stockfish.postMessage("stop");
+            stockfish.postMessage("position fen " + game.fen());
+            stockfish.postMessage(`go depth ${CHESS_CONFIG.engine.depth}`);
+        }
+
+        function toggleTheme() { $('body').toggleClass('dark'); board.resize(); setTimeout(drawArrows, 200); }
+        function flipBoard() { board.flip(); setTimeout(drawArrows, 200); }
+        function undoMove() { game.undo(); board.position(game.fen()); currentMoves = []; analyze(); updatePGN(); }
+        function resetGame() { game.reset(); board.start(); currentMoves = []; lastEval = 0; analyze(); updatePGN(); }
+
+        $(document).ready(() => {
+            board = Chessboard('myBoard', { 
+                draggable: true, position: 'start', 
+                onDrop: onDrop,
+                onSnapEnd: () => board.position(game.fen()),
+                pieceTheme: CHESS_CONFIG.visuals.pieceTheme
+            });
+            initEngine();
+            $('#pvInput').on('input', function() { $('#pvDisplay').text($(this).val()); updateEngineOptions(); analyze(); });
+            $('#eloInput').on('change', () => { updateEngineOptions(); analyze(); });
+            window.onresize = () => { board.resize(); drawArrows(); };
+            document.getElementById('boardParent').addEventListener('touchmove', e => e.preventDefault(), { passive: false });
+        });
     </script>
 </body>
 </html>
